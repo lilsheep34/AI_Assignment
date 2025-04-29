@@ -15,7 +15,8 @@ def clean_text(x):
 
 # ------------------------------- Load and prepare data -------------------------------------
 # open file and load it into DataFrame (table of data)
-df = pd.read_csv('C:/Users/xingj/Desktop/TARUMT/RSTY2S3/AI/Assignment/steam.csv')
+df = pd.read_csv('steam.csv')
+print(df.head()) # show first 5 rows of the table
 
 # take some columns, fill in missing ones with an empty string, glue them tgt with space between, then clean text using clean_text helper
 df['genres'] = df['genres'].str.replace(';', ', ', regex=False)

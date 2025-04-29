@@ -75,6 +75,7 @@ search_var = tk.StringVar()
 search_entry = tk.Entry(search_frame, textvariable=search_var, width=50)
 search_entry.pack()
 
+tk.Label(app, text="Recommended game that you’ll enjoy:").pack()
 suggest_listbox = tk.Listbox(search_frame, height=5, width=50)
 suggest_listbox.pack(pady=(5, 10))
 suggest_listbox.pack_forget()
@@ -103,12 +104,12 @@ search_entry.bind('<KeyRelease>', update_suggestions)
 suggest_listbox.bind('<<ListboxSelect>>', fill_from_suggest)
 
 # Number of recommendations
-tk.Label(app, text="Number of recommendations:").pack()
 num_slider = tk.Scale(app, from_=1, to=10, orient=tk.HORIZONTAL)
 num_slider.set(1)
 num_slider.pack()
 
 # Results display
+tk.Label(app, text="\nNumber of recommendations:").pack()
 result_box = tk.Text(app, height=15, width=80)
 result_box.pack(pady=10)
 

@@ -161,6 +161,7 @@ def show_recommendations():
         messagebox.showerror("Error", error)
         return
 
+    #warning pop out msg if no any recommendation
     if recommendations.empty:
         messagebox.showwarning("Warning", f"No recommended games found for '{game}'.")
         return

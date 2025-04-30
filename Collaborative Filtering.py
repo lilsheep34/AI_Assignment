@@ -1,6 +1,8 @@
 import pandas as pd
 import tkinter as tk
 from tkinter import ttk, messagebox
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+from matplotlib.figure import Figure
 
 # ------------------------------- Load and prepare data -------------------------------------
 #create column name
@@ -58,10 +60,43 @@ def recommend_collborative(game_name, num_recommendations):
 
     return recommendations_df,None
 
+# ------------------------------- graph -------------------------------------
+def playing_graph(parent_window, option):
+    #sort the data in big to small and get the first 10 data 
+    if option == "mean":
+        average = mean_play.sort_values(ascending=False)
+    else:
+        average = count_play.sort_values(ascending=False)
+    average = average.head(10)
+
+    #plot the graph
+    fig = Figure(figsize=(9,5),dpi=100)
+    ax = fig.add_subplot(111)
+    average.plot(kind='bar',ax=ax)
+
+    #axis name and setting
+    if option == "mean":
+        ax.set_title('Top 10 Games by Average Hours of Playing')
+        ax.set_ylabel('Average Hours of Playing')
+    else:
+        ax.set_title('Top 10 Games by Total number of people who are playing')
+        ax.set_ylabel('Total number of people who are playing')
+        
+    ax.set_xlabel('Name of Steam Game')
+    ax.tick_params(axis='x',rotation=90)
+
+    fig.tight_layout()
+
+    #embed plot into tkinter window
+    canvas = FigureCanvasTkAgg(fig,master=parent_window)
+    canvas.draw()
+    canvas.get_tk_widget().pack(pady=10)
+
+#hour_playing_graph()
 # --------------------------- GUI setup -------------------------------------
 app = tk.Tk()
 app.title("Steam Game Recommender")
-app.geometry("700x700")
+app.geometry("700x800")
 
 # Title
 tk.Label(app, text="🎮 Collaborative Filtering Recommender System", font=("Roboto", 18)).pack(pady=10)
@@ -120,9 +155,14 @@ def show_recommendations():
     game = search_var.get()
     num = num_slider.get()
     recommendations, error = recommend_collborative(game, num)
-
+    print(recommendations)
+    
     if error:
         messagebox.showerror("Error", error)
+        return
+
+    if recommendations.empty:
+        messagebox.showwarning("Warning", f"No recommended games found for '{game}'.")
         return
 
     for i,row in recommendations.iterrows():
@@ -130,6 +170,31 @@ def show_recommendations():
 
 # Recommend button
 tk.Button(app, text="🔍 Recommend", command=show_recommendations).pack(pady=5)
+
+tk.Label(app, text="\n\n----- Summary Bar Chart -----").pack()
+tk.Label(app, text="Select Bar Chart topic: ").pack()
+graph_var = tk.StringVar(value="hour_of_playing")
+
+graph_frame = tk.Frame(app)
+graph_frame.pack()
+
+tk.Radiobutton(graph_frame, text="Average hours of playing of each game", variable=graph_var, value="hour_of_playing").pack(side='left', padx=10)
+tk.Radiobutton(graph_frame, text="Total number of people who are playing of each game", variable=graph_var, value="number_of_playing").pack(side='left', padx=10)
+
+def view_graph():
+    graph = graph_var.get()
+
+    graph_win = tk.Toplevel(app)
+    graph_win.geometry("900x500")
+    if graph == "hour_of_playing":
+        graph_win.title("Average hours of playing of each game")
+        playing_graph(graph_win,"mean")
+    else:
+        graph_win.title("Total number of people who are playing of each game")
+        playing_graph(graph_win,"count")
+
+#view graph
+tk.Button(app, text="🔍 View Graph", command=view_graph).pack(pady=5)
 
 # Start app
 app.mainloop()

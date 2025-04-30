@@ -84,7 +84,7 @@ def recommend(game_title, num_recommendations=5):
         row = df.loc[i]
 
         # add game's name, its genre, who made it and shared features in our list
-        recommendations.append((row['name'], row['genres'], row['developer'], shared))
+        recommendations.append((row['name'], row['genres'], row['developer'], shared, score))
 
     # when done, we return list of recommendations and None because there's no error
     return recommendations, None
@@ -154,8 +154,10 @@ def show_recommendations():
         messagebox.showerror("Error", error)
         return
 
-    for idx, (name, genre, developer, shared) in enumerate(recommendations, start=1):
-        result_box.insert(tk.END, f"{idx}. 🎯 {name}\nGenres   : {genre}\nDeveloper: {developer}\nShared features with {game}: {shared}\n\n")
+    # display recommendations in the text box
+    for idx, (name, genre, developer, shared, score) in enumerate(recommendations, start=1):
+        result_box.insert(tk.END, f"{idx}. 🎯 {name}\nGenres   : {genre}\nDeveloper: {developer}\nShared features with {game}: {shared}\nSimilarity score: {score:.4f}\n\n")
+
 
 # Recommend button
 tk.Button(app, text="🔍 Recommend", command=show_recommendations).pack(pady=5)
@@ -192,10 +194,9 @@ def cold_start_recommend():
 
     for idx, i in enumerate(top_indices, start=1):
         row = df.loc[i]
-
-        # show what you have in common
         shared = ', '.join(set(user_pref.split()).intersection(row['combined_features'].split()))
-        result_box.insert(tk.END, f"{idx}. 🎯 {row['name']}\nGenres   : {row['genres']}\nDeveloper: {row['developer']}\nShared features: {shared}\n\n")
+        score = sim_scores[i]
+        result_box.insert(tk.END, f"{idx}. 🎯 {row['name']}\nGenres   : {row['genres']}\nDeveloper: {row['developer']}\nShared features: {shared}\nSimilarity score: {score:.4f}\n\n")
 
 # Cold-start button
 tk.Button(app, text="✨ Recommend by Preference", command=cold_start_recommend).pack(pady=5)

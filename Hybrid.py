@@ -4,6 +4,8 @@ from tkinter import ttk, messagebox
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import linear_kernel
 from surprise import Dataset, Reader, SVD
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+import matplotlib.pyplot as plt
 
 # ---------- Load and Prepare Data ----------
 
@@ -67,13 +69,26 @@ def hybrid_recommendation(user_id, liked_game, top_n=5):
     collab_recs = [g for g in collab_recs if g.lower() != liked_game_lower]
 
     hybrid_scores = {}
+    content_scores = {}
+    collab_scores = {}
+
     for game in content_recs:
+        content_scores[game] = 1
         hybrid_scores[game] = hybrid_scores.get(game, 0) + 1
+
     for game in collab_recs:
+        collab_scores[game] = 1.5
         hybrid_scores[game] = hybrid_scores.get(game, 0) + 1.5
 
     sorted_games = sorted(hybrid_scores.items(), key=lambda x: x[1], reverse=True)
-    return [g[0] for g in sorted_games[:top_n]]
+
+    results = []
+    for game, final_score in sorted_games[:top_n]:
+        content_score = content_scores.get(game, 0)
+        collab_score = collab_scores.get(game, 0)
+        results.append((game, content_score, collab_score, final_score))
+
+    return results
 
 # ---------- GUI Setup with Tkinter ----------
 def get_recommendations():
@@ -111,23 +126,62 @@ def get_recommendations():
         played_liked = merged_df[merged_df["name"].str.lower() == game_title.lower()]["user_id"].nunique()
         output.insert(END, f"Liked Game: {liked_game_row['name']} (Played by {played_liked} users)\n\n")
 
-        for i, rec_game in enumerate(recs, 1):
+        for i, (rec_game, c_score, collab_score, final_score) in enumerate(recs, 1):
             game_row = content_df[content_df["name"] == rec_game].iloc[0]
             rec_features = set(game_row["combined"].lower().split())
             shared = liked_features.intersection(rec_features)
 
             user_count = merged_df[merged_df["name"] == rec_game]["user_id"].nunique()
+
             output.insert(END, f"{i}. {rec_game}\n")
+            output.insert(END, f"   ➤ Content Score: {c_score}\n")
+            output.insert(END, f"   ➤ Collaborative Score: {collab_score}\n")
+            output.insert(END, f"   ➤ Final Score: {final_score}\n")
             output.insert(END, f"   ➤ Shared Features: {', '.join(shared) if shared else 'None'}\n")
             output.insert(END, f"   ➤ Played by {user_count} users\n\n")
+
+        display_score_chart(recs)
 
         if not recs:
             output.insert(END, "No recommendations available.")
 
+
     except Exception as e:
         messagebox.showerror("Error", str(e))
 
+def display_score_chart(recommendations):
+    import matplotlib.pyplot as plt
+    from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 
+    games = [r[0] for r in recommendations]
+    content_scores = [r[1] for r in recommendations]
+    collab_scores = [r[2] for r in recommendations]
+    final_scores = [r[3] for r in recommendations]
+
+    x = range(len(games))
+    width = 0.2
+
+    # Create new window
+    chart_window = Toplevel(root)
+    chart_window.title("Score Breakdown Chart")
+    chart_window.geometry("800x400")
+
+    fig, ax = plt.subplots(figsize=(8, 4))
+    ax.bar([i - width for i in x], content_scores, width, label='Content')
+    ax.bar(x, collab_scores, width, label='Collaborative')
+    ax.bar([i + width for i in x], final_scores, width, label='Final')
+
+    ax.set_ylabel("Score")
+    ax.set_title("Recommendation Score Breakdown")
+    ax.set_xticks(x)
+    ax.set_xticklabels(games, rotation=45, ha='right', fontsize=8)
+    ax.legend()
+
+    fig.tight_layout()
+
+    canvas = FigureCanvasTkAgg(fig, master=chart_window)
+    canvas.draw()
+    canvas.get_tk_widget().pack(fill=BOTH, expand=True)
 
 root = Tk()
 root.title("Steam Game Recommender")
@@ -154,5 +208,10 @@ Button(root, text="Get Recommendations", command=get_recommendations).pack(pady=
 Label(root, text="Recommendations:").pack()
 output = Text(root, height=20, width=80)
 output.pack()
+
+Label(root, text="Score Breakdown Chart:").pack()
+chart_frame = Frame(root)
+chart_frame.pack()
+
 
 root.mainloop()

@@ -155,11 +155,13 @@ def show_recommendations():
     game = search_var.get()
     num = num_slider.get()
     recommendations, error = recommend_collborative(game, num)
+    print(recommendations)
     
     if error:
         messagebox.showerror("Error", error)
         return
 
+    #warning pop out msg if no any recommendation
     if recommendations.empty:
         messagebox.showwarning("Warning", f"No recommended games found for '{game}'.")
         return

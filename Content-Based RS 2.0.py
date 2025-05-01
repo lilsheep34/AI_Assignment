@@ -106,7 +106,7 @@ def graph_display(parent_window, sim_scores):
     fig = Figure(figsize=(9,5),dpi=100)
     ax = fig.add_subplot(111)
     scores.plot(kind='bar',x='Game Name',y='Similarity Score',ax=ax)
-    ax.set_title('Top 10 of similarity score')
+    ax.set_title('Top 10 Game Similarity Scores')
     ax.set_ylabel('Similarity score')
     ax.set_xlabel('Name of Steam Game')
     ax.tick_params(axis='x',rotation=90)
@@ -247,7 +247,7 @@ def view_graph():
         return
     graph_win = tk.Toplevel(app)
     graph_win.geometry("900x500")
-    graph_win.title("Similarity score based on the")
+    graph_win.title("Similarity Score Bar Chart")
     graph_display(graph_win, last_sim_scores)
 
 #view graph

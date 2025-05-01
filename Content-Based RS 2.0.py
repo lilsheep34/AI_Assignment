@@ -4,6 +4,8 @@ from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import linear_kernel
 import tkinter as tk
 from tkinter import ttk, messagebox
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+from matplotlib.figure import Figure
 
 # ------------------------- Preprocessing function --------------------------------
 def clean_text(x):
@@ -16,7 +18,7 @@ def clean_text(x):
 # ------------------------------- Load and prepare data -------------------------------------
 # open file and load it into DataFrame (table of data)
 df = pd.read_csv('steam.csv')
-print(df.head()) # show first 5 rows of the table
+#print(df.head()) # show first 5 rows of the table
 
 # take some columns, fill in missing ones with an empty string, glue them tgt with space between, then clean text using clean_text helper
 df['genres'] = df['genres'].str.replace(';', ', ', regex=False)
@@ -71,6 +73,7 @@ def recommend(game_title, num_recommendations=5):
 
     # skip the first one (which is game itself!) and keep only number of recommendation the user asked for
     sim_scores = sim_scores[1:num_recommendations+1]
+    
 
     # make an empty list to store recommended games
     recommendations = []
@@ -88,14 +91,42 @@ def recommend(game_title, num_recommendations=5):
 
     # when done, we return list of recommendations and None because there's no error
     return recommendations, None
+    
+#get the similarity score and do a table with the game name 
+def get_sim_scores_table(sim_scores):
+    data_sim_scores = []
+    for i,score in sim_scores:
+        name = df.loc[i,'name']
+        data_sim_scores.append({'Game Name':name,'Similarity Score':score})
 
+    return pd.DataFrame(data_sim_scores)
+
+def graph_display(parent_window, sim_scores):
+    scores = get_sim_scores_table(sim_scores).head(10)
+    fig = Figure(figsize=(9,5),dpi=100)
+    ax = fig.add_subplot(111)
+    scores.plot(kind='bar',x='Game Name',y='Similarity Score',ax=ax)
+    ax.set_title('Top 10 of similarity score')
+    ax.set_ylabel('Similarity score')
+    ax.set_xlabel('Name of Steam Game')
+    ax.tick_params(axis='x',rotation=90)
+
+    fig.tight_layout()
+
+    #embed plot into tkinter window
+    canvas = FigureCanvasTkAgg(fig,master=parent_window)
+    canvas.draw()
+    canvas.get_tk_widget().pack(pady=10)
+    
 # --------------------------- GUI setup -------------------------------------
 app = tk.Tk()
 app.title("Steam Game Recommender")
-app.geometry("700x700")
+app.geometry("700x900")
 
 # Title
 tk.Label(app, text="🎮 Content-Based Filtering Recommender System", font=("Roboto", 18)).pack(pady=10)
+
+last_sim_scores = []
 
 # Frame to hold search input and suggestions
 search_frame = tk.Frame(app)
@@ -145,6 +176,8 @@ result_box.pack(pady=10)
 
 # Recommend button callback
 def show_recommendations():
+    global last_sim_scores  # make accessible to other functions
+    
     result_box.delete("1.0", tk.END)
     game = search_var.get()
     num = num_slider.get()
@@ -154,6 +187,11 @@ def show_recommendations():
         messagebox.showerror("Error", error)
         return
 
+    idx = indices[game]
+    sim_scores = list(enumerate(cosine_sim[idx]))
+    sim_scores = sorted(sim_scores, key=lambda x: x[1], reverse=True)[1:num+1]
+    last_sim_scores = sim_scores  # Save for graph
+    
     # display recommendations in the text box
     for idx, (name, genre, developer, shared, score) in enumerate(recommendations, start=1):
         result_box.insert(tk.END, f"{idx}. 🎯 {name}\nGenres   : {genre}\nDeveloper: {developer}\nShared features with {game}: {shared}\nSimilarity score: {score:.4f}\n\n")
@@ -200,6 +238,20 @@ def cold_start_recommend():
 
 # Cold-start button
 tk.Button(app, text="✨ Recommend by Preference", command=cold_start_recommend).pack(pady=5)
+
+tk.Label(app, text="\n\n----- Summary Bar Chart -----").pack()
+
+def view_graph():
+    if not last_sim_scores:
+        messagebox.showwarning("No data", "Please run a recommendation first.")
+        return
+    graph_win = tk.Toplevel(app)
+    graph_win.geometry("900x500")
+    graph_win.title("Similarity score based on the")
+    graph_display(graph_win, last_sim_scores)
+
+#view graph
+tk.Button(app, text="🔍 View Graph", command=view_graph).pack(pady=5)
 
 # Start app
 app.mainloop()

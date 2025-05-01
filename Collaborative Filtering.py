@@ -165,7 +165,7 @@ def show_recommendations():
     if recommendations.empty:
         messagebox.showwarning("Warning", f"No recommended games found for '{game}'.")
         return
-
+        
     for i,row in recommendations.iterrows():
         result_box.insert(tk.END, f"{i+1}. 🎯 {row['Name of steam game']}\nNumber of people are playing : {int(row['Number of playing'])}\nAverage hour played : {row['Hours of playing']:.2f}hours\n\n")
 
